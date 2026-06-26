@@ -1,0 +1,82 @@
+// src/app/api/bookings/cancel/route.ts
+// POST /api/bookings/cancel — Annulation par l'avocat (via token)
+// DELETE /api/bookings/cancel — Suppression données victime (RGPD)
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
+import { sendSmsAnnulation } from '@/lib/notifications'
+import { decrypt } from '@/lib/crypto'
+
+// Annulation par l'avocat (lien dans l'email)
+export async function POST(req: NextRequest) {
+  const { token } = await req.json()
+  if (!token) return NextResponse.json({ error: 'Token manquant' }, { status: 400 })
+
+  const rdv = await prisma.rendezVous.findFirst({
+    where: { tokenAnnulation: token, statut: 'CONFIRME' },
+    include: { creneau: true },
+  })
+
+  if (!rdv) return NextResponse.json({ error: 'Rendez-vous introuvable ou déjà annulé' }, { status: 404 })
+
+  await prisma.$transaction([
+    prisma.rendezVous.update({
+      where: { id: rdv.id },
+      data: { statut: 'ANNULE' },
+    }),
+    prisma.creneau.update({
+      where: { id: rdv.creneauId },
+      data: { statut: 'LIBRE' }, // Remettre le créneau disponible
+    }),
+    prisma.auditLog.create({
+      data: {
+        action: 'RDV_ANNULE',
+        acteur: `AVOCAT:${rdv.avocatId}`,
+        details: JSON.stringify({ rdvId: rdv.id }),
+      },
+    }),
+  ])
+
+  // SMS d'information à la victime
+  const telephone = decrypt(rdv.victimeTelEncrypted)
+  await sendSmsAnnulation({ telephone, debut: rdv.creneau.debut }).catch(console.error)
+
+  return NextResponse.json({ success: true })
+}
+
+// Suppression données victime (droit RGPD, lien dans le SMS)
+export async function DELETE(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const token = searchParams.get('token')
+  if (!token) return NextResponse.json({ error: 'Token manquant' }, { status: 400 })
+
+  const rdv = await prisma.rendezVous.findFirst({
+    where: { tokenSuppression: token },
+  })
+
+  if (!rdv) return NextResponse.json({ error: 'Introuvable' }, { status: 404 })
+
+  // Anonymiser les données personnelles (ne pas supprimer l'enregistrement pour les stats)
+  await prisma.$transaction([
+    prisma.rendezVous.update({
+      where: { id: rdv.id },
+      data: {
+        victimePrenom: '[supprimé]',
+        victimeNom: '[supprimé]',
+        victimeTelEncrypted: '[supprimé]',
+        victimeEmailEncrypted: null,
+        lienVisio: null,
+        tokenSuppression: `deleted_${rdv.id}`, // Invalider le token
+      },
+    }),
+    prisma.auditLog.create({
+      data: {
+        action: 'DONNEES_SUPPRIMEES',
+        acteur: 'VICTIME',
+        details: JSON.stringify({ rdvId: rdv.id }),
+      },
+    }),
+  ])
+
+  return NextResponse.json({ success: true, message: 'Vos données personnelles ont été supprimées.' })
+}

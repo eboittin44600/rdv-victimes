@@ -1,0 +1,143 @@
+// Schéma Prisma — Plateforme RDV Victimes — Barreau de Saint-Nazaire
+// Hébergement : Supabase (PostgreSQL, région Europe West)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── AVOCATS ─────────────────────────────────────────────────────────────────
+
+model Avocat {
+  id                String    @id @default(uuid())
+  nom               String
+  prenom            String
+  email             String    @unique
+  telephone         String?
+  actif             Boolean   @default(true)
+  visioOk           Boolean   @default(false)
+  specialites       String[]  @default([])
+  tourDeRoleIndex   Int       @default(0)
+  // Jeton d'authentification (lien magique)
+  authToken         String?   @unique
+  authTokenExpiry   DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  creneaux          Creneau[]
+  rendezVous        RendezVous[]
+
+  @@map("avocats")
+}
+
+// ─── CRÉNEAUX ─────────────────────────────────────────────────────────────────
+
+enum ModeCreneau {
+  PRESENTIEL
+  VISIO
+  TELEPHONE
+}
+
+enum StatutCreneau {
+  LIBRE
+  RESERVE
+  ANNULE
+}
+
+model Creneau {
+  id               String         @id @default(uuid())
+  avocatId         String
+  avocat           Avocat         @relation(fields: [avocatId], references: [id])
+  debut            DateTime
+  fin              DateTime
+  mode             ModeCreneau
+  statut           StatutCreneau  @default(LIBRE)
+  recurrent        Boolean        @default(false)
+  recurrentJusquAu DateTime?
+  createdAt        DateTime       @default(now())
+
+  rendezVous       RendezVous?
+
+  @@index([avocatId, statut, debut])
+  @@map("creneaux")
+}
+
+// ─── RENDEZ-VOUS ──────────────────────────────────────────────────────────────
+
+enum Parcours {
+  A  // Choix de l'avocat par la victime
+  B  // Affectation automatique (premier créneau dispo)
+}
+
+enum StatutRdv {
+  CONFIRME
+  ANNULE
+}
+
+enum TypeViolence {
+  CONJUGALES
+  SEXUELLES
+  INTRAFAMILIALES
+  HARCELEMENT
+  AUTRE
+  NON_PRECISE
+}
+
+model RendezVous {
+  id               String        @id @default(uuid())
+  creneauId        String        @unique
+  creneau          Creneau       @relation(fields: [creneauId], references: [id])
+  avocatId         String
+  avocat           Avocat        @relation(fields: [avocatId], references: [id])
+
+  // Données victime (chiffrées en application avant stockage)
+  victimePrenom        String
+  victimeNom           String
+  victimeTelEncrypted  String    // AES-256 appliqué côté app
+  victimeEmailEncrypted String?  // Null si mode != VISIO
+
+  mode             ModeCreneau
+  typeViolence     TypeViolence  @default(NON_PRECISE)
+  parcours         Parcours
+  statut           StatutRdv     @default(CONFIRME)
+
+  // Lien visio généré automatiquement
+  lienVisio        String?
+
+  // Token pour annulation par l'avocat (UUID opaque)
+  tokenAnnulation  String        @unique @default(uuid())
+
+  // Token pour suppression par la victime (RGPD)
+  tokenSuppression String        @unique @default(uuid())
+
+  // Notifications envoyées
+  smsConfirmationEnvoye   Boolean @default(false)
+  smsRappelEnvoye         Boolean @default(false)
+  emailAvocatEnvoye       Boolean @default(false)
+
+  createdAt        DateTime      @default(now())
+  // Suppression automatique RGPD : 30 jours après le RDV
+  expireAt         DateTime
+
+  @@index([avocatId, statut])
+  @@index([expireAt])
+  @@map("rendez_vous")
+}
+
+// ─── AUDIT LOG (immuable) ─────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String   // ex: "RDV_CREE", "RDV_ANNULE", "DONNEES_SUPPRIMEES"
+  acteur    String   // "VICTIME", "AVOCAT:{id}", "ADMIN", "SYSTEM"
+  details   String?  // JSON string des métadonnées (sans données personnelles)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("audit_log")
+}
