@@ -23,19 +23,24 @@ export default function ChoisirAvocat() {
   const router = useRouter()
   const [avocats, setAvocats] = useState<Avocat[]>([])
   const [loading, setLoading] = useState(true)
-  const [filtreMode, setFiltreMode] = useState('')
+const [filtreMode, setFiltreMode] = useState('')
   const [slotChoisi, setSlotChoisi] = useState<{ creneauId: string; avocatId: string } | null>(null)
   const [modeChoisi, setModeChoisi] = useState('')
   const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState('')
 
-  const formData = typeof window !== 'undefined'
+const formData = typeof window !== 'undefined'
     ? JSON.parse(sessionStorage.getItem('rdv_form') || '{}')
     : {}
 
   useEffect(() => {
+    if (formData.mode) setFiltreMode(formData.mode)
+  }, [])
+
+  useEffect(() => {
     const params = new URLSearchParams()
     if (filtreMode) params.set('mode', filtreMode)
+    else if (formData.mode) params.set('mode', formData.mode)
     setLoading(true)
     fetch(`/api/slots?${params}`)
       .then(r => r.json())
