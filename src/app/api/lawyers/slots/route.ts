@@ -1,7 +1,5 @@
-// src/app/api/lawyers/slots/route.ts
-// GET  /api/lawyers/slots  — Créneaux de l'avocat connecté
-// POST /api/lawyers/slots  — Ajouter un créneau
 export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
@@ -34,15 +32,18 @@ export async function GET(req: NextRequest) {
     orderBy: { debut: 'asc' },
   })
 
-  // Déchiffrer les données des victimes pour l'affichage à l'avocat
   const { decrypt } = await import('@/lib/crypto')
+
   const creneauxDechiffres = creneaux.map(c => ({
     ...c,
     rendezVous: c.rendezVous ? {
       ...c.rendezVous,
-      victimeTelephone: decrypt(c.rendezVous.victimeTelEncrypted),
-      victimeEmail: c.rendezVous.victimeEmailEncrypted ? decrypt(c.rendezVous.victimeEmailEncrypted) : null,
-      // Ne pas exposer les tokens chiffrés dans la réponse
+      victimeTelephone: c.rendezVous.victimeTelEncrypted !== '[supprimé]'
+        ? decrypt(c.rendezVous.victimeTelEncrypted)
+        : '[supprimé]',
+      victimeEmail: c.rendezVous.victimeEmailEncrypted
+        ? decrypt(c.rendezVous.victimeEmailEncrypted)
+        : null,
       victimeTelEncrypted: undefined,
       victimeEmailEncrypted: undefined,
     } : null,
@@ -68,10 +69,9 @@ export async function POST(req: NextRequest) {
   const debut = parseISO(data.debut)
   const fin = parseISO(data.fin)
 
-  // Générer des créneaux de 30 minutes sur la plage horaire
   function genererCreneaux30min(dateDebut: Date, dateFin: Date, avocatId: string, mode: string, recurrent: boolean, recurrentJusquAu?: Date) {
     const creneaux = []
-    let current = dateDebut
+    let current = new Date(dateDebut)
     while (current < dateFin) {
       const finCreneau = new Date(current.getTime() + 30 * 60 * 1000)
       if (finCreneau > dateFin) break
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
   if (data.recurrent && data.recurrentJusquAu) {
     const fin_recurrence = parseISO(data.recurrentJusquAu)
     const creneaux = []
-    let currentDate = debut
+    let currentDate = new Date(debut)
 
     while (currentDate <= fin_recurrence) {
       const finDuJour = new Date(currentDate)
@@ -110,7 +110,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE /api/lawyers/slots/:id
 export async function DELETE(req: NextRequest) {
   const avocat = await verifyAvocatToken(req)
   if (!avocat) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
