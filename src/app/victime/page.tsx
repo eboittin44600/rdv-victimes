@@ -33,40 +33,11 @@ export default function PortailVictime() {
   async function continuer() {
     if (!valider()) return
     setLoading(true)
-
     sessionStorage.setItem('rdv_form', JSON.stringify({ ...form, mode, parcours }))
-
     if (parcours === 'A') {
       router.push('/victime/choisir-avocat')
     } else {
-      try {
-        const res = await fetch('/api/bookings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            parcours: 'B',
-            victimePrenom: form.prenom,
-            victimeNom: form.nom,
-            victimeTelephone: form.telephone.replace(/\s/g, ''),
-            victimeEmail: mode === 'VISIO' ? form.email : undefined,
-            mode,
-            typeViolence: form.typeViolence || 'NON_PRECISE',
-            resumeSituation: form.resumeSituation || undefined,
-            consentementRgpd: true,
-          }),
-        })
-        const data = await res.json()
-        if (!res.ok) {
-          setErreurs({ global: data.error })
-          setLoading(false)
-          return
-        }
-        sessionStorage.setItem('rdv_confirmation', JSON.stringify(data))
-        router.push('/victime/confirmation')
-      } catch {
-        setErreurs({ global: 'Erreur réseau. Veuillez réessayer.' })
-        setLoading(false)
-      }
+      router.push('/victime/premier-creneau')
     }
   }
 
@@ -85,14 +56,14 @@ export default function PortailVictime() {
             Prendre un premier rendez-vous
           </h1>
           <p className="text-gray-500 text-sm">
-            Consultation initiale gratuite et confidentielle pour les victimes d'infractions et d'accidents
+            Consultation initiale gratuite et confidentielle pour les victimes d'infractions
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 mb-6">
           {([
-            { id: 'A', titre: 'Je choisis mon avocat', desc: 'Consultez les créneaux et sélectionnez l\'avocat de votre choix', icon: '👤' },
-            { id: 'B', titre: 'Premier créneau disponible', desc: 'Affectation automatique au premier avocat libre, sans délai', icon: '⚡' },
+            { id: 'A', titre: 'Je choisis mon avocat', desc: "Consultez les créneaux et sélectionnez l'avocat de votre choix", icon: '👤' },
+            { id: 'B', titre: 'Premiers créneaux disponibles', desc: 'Voir les créneaux disponibles sous 72h avec les avocats associés', icon: '⚡' },
           ] as const).map(opt => (
             <button
               key={opt.id}
@@ -243,7 +214,7 @@ export default function PortailVictime() {
           disabled={loading}
           className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white font-medium py-3 rounded-xl transition-colors"
         >
-          {loading ? 'Recherche en cours...' : parcours === 'A' ? 'Choisir mon avocat →' : 'Trouver le premier créneau →'}
+          {loading ? 'Chargement...' : parcours === 'A' ? 'Choisir mon avocat →' : 'Voir les créneaux disponibles →'}
         </button>
 
         <div className="mt-6 text-center text-xs text-gray-400">
