@@ -8,7 +8,7 @@ type Profil = {
   id: string; prenom: string; nom: string; email: string
   telephone?: string; actif: boolean; visioOk: boolean
   numeroRue?: string; nomRue?: string; codePostal?: string; commune?: string
-  description?: string; photoUrl?: string
+  description?: string; photoUrl?: string; siteInternet?: string
 }
 type Creneau = {
   id: string; debut: string; fin: string; mode: string; statut: string
