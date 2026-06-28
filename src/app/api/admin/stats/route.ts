@@ -1,6 +1,6 @@
 // src/app/api/admin/stats/route.ts
 // GET /api/admin/stats — Statistiques pour le tableau de bord
-
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { verifyAdminToken } from '@/lib/auth'
