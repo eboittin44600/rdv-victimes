@@ -265,7 +265,7 @@ const modesDispos = (creneau?.modes && creneau.modes.length > 0) ? creneau.modes
                 {/* Sélection du mode + confirmation */}
                 {isSelected && slotChoisi && (() => {
                   const creneau = avocat.creneaux.find(c => c.id === slotChoisi.creneauId)
-                  const modesDispos = creneau?.modes?.length > 0 ? creneau.modes : [creneau?.mode || 'PRESENTIEL']
+const modesDispos = (creneau?.modes && creneau.modes.length > 0) ? creneau.modes : [creneau?.mode || 'PRESENTIEL']
                   const dateStr = creneau ? format(new Date(creneau.debut), 'EEEE d MMMM à HH:mm', { locale: fr }) : ''
                   return (
                     <div className="pt-3 border-t border-gray-100">
