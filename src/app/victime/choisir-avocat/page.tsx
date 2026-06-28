@@ -177,7 +177,7 @@ export default function ChoisirAvocat() {
                     {avocat.certificatSpecialisation && (
                       <div className="flex-shrink-0 flex flex-col items-center text-center">
                         <img
-                          src="https://www.cnb.avocat.fr/sites/default/files/logo-specialiste.png"
+                          src="/specialiste.png"
                           alt="Spécialiste"
                           className="w-10 h-10 object-contain"
                           onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
