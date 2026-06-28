@@ -14,7 +14,7 @@ export default function Home() {
           Premier rendez-vous gratuit
         </h1>
         <p className="text-gray-500 mb-8 leading-relaxed">
-          Vous êtes victime de violences et souhaitez consulter un avocat ?<br />
+          Vous êtes victime d'une infraction ou d'un accident et souhaitez une consultation d'orientation ?<br />
           Prenez rendez-vous gratuitement avec un avocat du barreau de Saint-Nazaire.
         </p>
 
