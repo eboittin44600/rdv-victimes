@@ -49,7 +49,8 @@ export default function EspaceAvocat() {
   const [ajoutForm, setAjoutForm] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
     heureDebut: '09:00', heureFin: '12:00',
-    mode: 'PRESENTIEL', recurrent: false, fin_recurrence: '',
+    modes: ['PRESENTIEL'] as string[],
+    recurrent: false, fin_recurrence: '',
   })
   const [ajoutLoading, setAjoutLoading] = useState(false)
   const [ajoutErreur, setAjoutErreur] = useState('')
@@ -77,7 +78,7 @@ export default function EspaceAvocat() {
   function ouvrirFiche() {
     if (!profil) return
     setFicheForm({
-email: profil.email || '',
+      email: profil.email || '',
       telephone: profil.telephone || '',
       siteInternet: profil.siteInternet || '',
       numeroRue: profil.numeroRue || '',
@@ -120,13 +121,11 @@ email: profil.email || '',
 
   async function togglePref(champ: 'actif' | 'visioOk') {
     if (!profil) return
-    const res = await fetch('/api/lawyers/me', {
+    await fetch('/api/lawyers/me', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [champ]: !profil[champ] }),
     })
-    const data = await res.json()
-    setProfil(p => p ? { ...p, ...data } : p)
     charger()
   }
 
@@ -147,6 +146,10 @@ email: profil.email || '',
   }
 
   async function ajouterCreneau() {
+    if (ajoutForm.modes.length === 0) {
+      setAjoutErreur('Sélectionnez au moins un mode.')
+      return
+    }
     setAjoutLoading(true)
     setAjoutErreur('')
     const debut = new Date(`${ajoutForm.date}T${ajoutForm.heureDebut}:00`)
@@ -161,7 +164,8 @@ email: profil.email || '',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         debut: debut.toISOString(), fin: fin.toISOString(),
-        mode: ajoutForm.mode, recurrent: ajoutForm.recurrent,
+        modes: ajoutForm.modes,
+        recurrent: ajoutForm.recurrent,
         recurrentJusquAu: ajoutForm.recurrent ? ajoutForm.fin_recurrence : undefined,
       }),
     })
@@ -171,13 +175,15 @@ email: profil.email || '',
     else setAjoutErreur(data.error || 'Erreur serveur')
   }
 
+  const maintenant = new Date()
   const jours = Array.from({ length: 6 }, (_, i) => addDays(semaine, i))
   const creneauxParJour = jours.map(j =>
-    creneaux.filter(c => isSameDay(parseISO(c.debut), j))
+    creneaux
+      .filter(c => isSameDay(parseISO(c.debut), j) && new Date(c.debut) > maintenant)
       .sort((a, b) => new Date(a.debut).getTime() - new Date(b.debut).getTime())
   )
-  const rdvsAVenir = creneaux.filter(c => c.statut === 'RESERVE' && new Date(c.debut) > new Date())
-  const creneauxLibres = creneaux.filter(c => c.statut === 'LIBRE' && new Date(c.debut) > new Date())
+  const rdvsAVenir = creneaux.filter(c => c.statut === 'RESERVE' && new Date(c.debut) > maintenant)
+  const creneauxLibres = creneaux.filter(c => c.statut === 'LIBRE' && new Date(c.debut) > maintenant)
     .sort((a, b) => new Date(a.debut).getTime() - new Date(b.debut).getTime())
 
   return (
@@ -237,7 +243,7 @@ email: profil.email || '',
 
       <div className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Colonne gauche : Agenda */}
+        {/* Colonne gauche */}
         <div className="lg:col-span-2">
           <div className="flex items-center gap-3 mb-4">
             <button onClick={() => setSemaine(s => addWeeks(s, -1))}
@@ -318,7 +324,7 @@ email: profil.email || '',
           {showAjout && (
             <div className="mt-4 bg-white border border-gray-200 rounded-xl p-5">
               <h3 className="text-sm font-medium text-gray-900 mb-1">Nouvelle plage de disponibilité</h3>
-              <p className="text-xs text-gray-400 mb-4">Les créneaux de 30 minutes seront créés automatiquement.</p>
+              <p className="text-xs text-gray-400 mb-4">Les créneaux de 30 minutes seront créés automatiquement pour chaque mode sélectionné.</p>
               {ajoutErreur && (
                 <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 mb-3">{ajoutErreur}</div>
               )}
@@ -346,6 +352,7 @@ email: profil.email || '',
                   </select>
                 </div>
               </div>
+
               {ajoutForm.heureDebut && ajoutForm.heureFin && ajoutForm.heureFin > ajoutForm.heureDebut && (
                 <div className="bg-teal-50 border border-teal-100 rounded-lg px-3 py-2 mb-4">
                   <p className="text-xs text-teal-700 font-medium mb-1">Créneaux qui seront créés :</p>
@@ -357,10 +364,10 @@ email: profil.email || '',
                       let min = hd * 60 + md
                       const finMin = hf * 60 + mf
                       while (min + 30 <= finMin) {
-                        const h = Math.floor(min / 60).toString().padStart(2, '00')
-                        const m = (min % 60).toString().padStart(2, '00')
-                        const h2 = Math.floor((min + 30) / 60).toString().padStart(2, '00')
-                        const m2 = ((min + 30) % 60).toString().padStart(2, '00')
+                        const h = Math.floor(min / 60).toString().padStart(2, '0')
+                        const m = (min % 60).toString().padStart(2, '0')
+                        const h2 = Math.floor((min + 30) / 60).toString().padStart(2, '0')
+                        const m2 = ((min + 30) % 60).toString().padStart(2, '0')
                         slots.push(`${h}:${m}-${h2}:${m2}`)
                         min += 30
                       }
@@ -369,19 +376,52 @@ email: profil.email || '',
                       ))
                     })()}
                   </div>
+                  {ajoutForm.modes.length > 1 && (
+                    <p className="text-xs text-teal-600 mt-1">× {ajoutForm.modes.length} modes = {(() => {
+                      const [hd, md] = ajoutForm.heureDebut.split(':').map(Number)
+                      const [hf, mf] = ajoutForm.heureFin.split(':').map(Number)
+                      const nbSlots = Math.floor(((hf * 60 + mf) - (hd * 60 + md)) / 30)
+                      return nbSlots * ajoutForm.modes.length
+                    })()} créneaux au total</p>
+                  )}
                 </div>
               )}
+
               <div className="mb-4">
-                <label className="text-xs text-gray-500 block mb-1">Mode</label>
+                <label className="text-xs text-gray-500 block mb-2">
+                  Mode(s) — sélection multiple possible
+                </label>
                 <div className="flex gap-2">
-                  {Object.entries(MODES).map(([k, v]) => (
-                    <button key={k} onClick={() => setAjoutForm(f => ({ ...f, mode: k }))}
-                      className={`flex-1 py-2 text-xs rounded-lg border transition-all ${ajoutForm.mode === k ? 'bg-teal-50 border-teal-400 text-teal-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                      {v}
-                    </button>
-                  ))}
+                  {Object.entries(MODES).map(([k, v]) => {
+                    const disabled = k === 'VISIO' && !profil?.visioOk
+                    const selected = ajoutForm.modes.includes(k)
+                    return (
+                      <button key={k}
+                        disabled={disabled}
+                        onClick={() => {
+                          if (disabled) return
+                          setAjoutForm(f => ({
+                            ...f,
+                            modes: f.modes.includes(k)
+                              ? f.modes.filter((m: string) => m !== k)
+                              : [...f.modes, k]
+                          }))
+                        }}
+                        className={`flex-1 py-2 text-xs rounded-lg border transition-all ${
+                          disabled
+                            ? 'border-gray-100 text-gray-300 cursor-not-allowed bg-gray-50'
+                            : selected
+                              ? 'bg-teal-50 border-teal-400 text-teal-800 font-medium'
+                              : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                        }`}>
+                        {v}{selected && !disabled ? ' ✓' : ''}
+                        {disabled ? ' (désactivé)' : ''}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
+
               <div className="flex items-center gap-2 mb-4">
                 <input type="checkbox" id="recurrent" checked={ajoutForm.recurrent}
                   onChange={e => setAjoutForm(f => ({ ...f, recurrent: e.target.checked }))}
@@ -393,6 +433,7 @@ email: profil.email || '',
                     className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-teal-500" />
                 )}
               </div>
+
               <div className="flex gap-2">
                 <button onClick={ajouterCreneau} disabled={ajoutLoading}
                   className="flex-1 bg-teal-600 text-white text-sm py-2.5 rounded-lg hover:bg-teal-700 disabled:bg-teal-300 transition-colors font-medium">
@@ -531,7 +572,6 @@ email: profil.email || '',
 
             <div className="px-6 py-4 space-y-4">
 
-              {/* Photo */}
               <div>
                 <label className="text-xs text-gray-500 block mb-2">Photo (médaillon)</label>
                 <div className="flex items-center gap-4">
@@ -562,10 +602,9 @@ email: profil.email || '',
                 </div>
               </div>
 
-              {/* Contact */}
               <div>
                 <p className="text-xs font-medium text-gray-700 mb-2">Contact</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className="text-xs text-gray-500 block mb-1">Email</label>
                     <input type="email" value={ficheForm.email || ''}
@@ -580,15 +619,15 @@ email: profil.email || '',
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
                   </div>
                 </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Site internet</label>
+                  <input type="url" value={ficheForm.siteInternet || ''}
+                    onChange={e => setFicheForm((f: any) => ({ ...f, siteInternet: e.target.value }))}
+                    placeholder="https://www.cabinet-exemple.fr"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                </div>
               </div>
-<div>
-  <label className="text-xs text-gray-500 block mb-1">Site internet</label>
-  <input type="url" value={ficheForm.siteInternet || ''}
-    onChange={e => setFicheForm((f: any) => ({ ...f, siteInternet: e.target.value }))}
-    placeholder="https://www.cabinet-exemple.fr"
-    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
-</div>
-              {/* Adresse */}
+
               <div>
                 <p className="text-xs font-medium text-gray-700 mb-2">Adresse du cabinet</p>
                 <div className="grid grid-cols-4 gap-3 mb-3">
@@ -625,7 +664,6 @@ email: profil.email || '',
                 </div>
               </div>
 
-              {/* Présentation */}
               <div>
                 <label className="text-xs text-gray-500 block mb-1">Présentation libre</label>
                 <textarea value={ficheForm.description || ''}
