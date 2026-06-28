@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
-type Creneau = { id: string; debut: string; fin: string; mode: string }
+type Creneau = { id: string; debut: string; fin: string; mode: string; modes: string[] }
 type Avocat = {
   id: string; prenom: string; nom: string
   visioOk: boolean; specialites: string[]
@@ -25,6 +25,7 @@ export default function ChoisirAvocat() {
   const [loading, setLoading] = useState(true)
   const [filtreMode, setFiltreMode] = useState('')
   const [slotChoisi, setSlotChoisi] = useState<{ creneauId: string; avocatId: string } | null>(null)
+  const [modeChoisi, setModeChoisi] = useState('')
   const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState('')
 
@@ -33,9 +34,8 @@ export default function ChoisirAvocat() {
     : {}
 
   useEffect(() => {
-const params = new URLSearchParams()
-if (filtreMode) params.set('mode', filtreMode)
-
+    const params = new URLSearchParams()
+    if (filtreMode) params.set('mode', filtreMode)
     setLoading(true)
     fetch(`/api/slots?${params}`)
       .then(r => r.json())
@@ -43,8 +43,23 @@ if (filtreMode) params.set('mode', filtreMode)
       .catch(() => setLoading(false))
   }, [filtreMode])
 
-  async function confirmer() {
+  function selectionnerCreneau(creneauId: string, avocatId: string, avocat: Avocat) {
+    const creneau = avocat.creneaux.find(c => c.id === creneauId)
+    const modesDispos = creneau?.modes?.length > 0 ? creneau.modes : [creneau?.mode || 'PRESENTIEL']
+    setSlotChoisi({ creneauId, avocatId })
+    // Pré-sélectionner le mode du formulaire si disponible, sinon le premier
+    const modePrefere = modesDispos.includes(formData.mode) ? formData.mode : modesDispos[0]
+    setModeChoisi(modePrefere)
+    setErreur('')
+  }
+
+  async function confirmer(avocat: Avocat) {
     if (!slotChoisi) return
+    if (!modeChoisi) { setErreur('Veuillez choisir un mode de consultation.'); return }
+    if (modeChoisi === 'VISIO' && !formData.email) {
+      setErreur('Une adresse e-mail est requise pour la visioconférence. Retournez à l\'étape précédente.')
+      return
+    }
     setEnvoi(true); setErreur('')
 
     try {
@@ -58,8 +73,8 @@ if (filtreMode) params.set('mode', filtreMode)
           victimePrenom: formData.prenom,
           victimeNom: formData.nom,
           victimeTelephone: formData.telephone?.replace(/\s/g, ''),
-          victimeEmail: formData.mode === 'VISIO' ? formData.email : undefined,
-          mode: formData.mode,
+          victimeEmail: modeChoisi === 'VISIO' ? formData.email : undefined,
+          mode: modeChoisi,
           typeViolence: formData.typeViolence || 'NON_PRECISE',
           consentementRgpd: true,
         }),
@@ -96,7 +111,7 @@ if (filtreMode) params.set('mode', filtreMode)
           )}
         </div>
 
-        {/* Filtres mode */}
+        {/* Filtres */}
         <div className="flex gap-2 mb-5 flex-wrap">
           <button onClick={() => setFiltreMode('')}
             className={`text-xs px-3 py-1.5 rounded-full border transition-all ${!filtreMode ? 'bg-teal-50 border-teal-400 text-teal-800' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
@@ -147,7 +162,6 @@ if (filtreMode) params.set('mode', filtreMode)
 
               {/* Profil */}
               <div className="flex gap-4 mb-4">
-                {/* Photo ou initiales */}
                 <div className="flex-shrink-0">
                   {avocat.photoUrl ? (
                     <img src={avocat.photoUrl} alt={`Me ${avocat.prenom} ${avocat.nom}`}
@@ -159,38 +173,35 @@ if (filtreMode) params.set('mode', filtreMode)
                   )}
                 </div>
 
-                {/* Infos */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className="font-medium text-gray-900">Me {avocat.prenom} {avocat.nom}</h3>
-{(avocat.numeroRue || avocat.nomRue || avocat.commune) && (
-  <p className="text-sm text-gray-500 mt-0.5">
-    {[avocat.numeroRue, avocat.nomRue, avocat.codePostal, avocat.commune].filter(Boolean).join(' ')}
-  </p>
-)}
-{avocat.siteInternet && (
-  <a href={avocat.siteInternet} target="_blank" rel="noopener noreferrer"
-    className="text-xs text-teal-600 hover:underline mt-0.5 block">
-    {avocat.siteInternet.replace(/^https?:\/\//, '')}
-  </a>
-)}
+                      {(avocat.numeroRue || avocat.nomRue || avocat.commune) && (
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          {[avocat.numeroRue, avocat.nomRue, avocat.codePostal, avocat.commune].filter(Boolean).join(' ')}
+                        </p>
+                      )}
+                      {avocat.siteInternet && (
+                        <a href={avocat.siteInternet} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-teal-600 hover:underline mt-0.5 block">
+                          {avocat.siteInternet.replace(/^https?:\/\//, '')}
+                        </a>
+                      )}
                       {avocat.anneeSerment && (
                         <p className="text-xs text-gray-400 mt-0.5">
                           Prestation de serment : {avocat.anneeSerment}
                         </p>
                       )}
                     </div>
+
                     {/* Badge spécialiste */}
                     {avocat.certificatSpecialisation && (
-                      <div className="flex-shrink-0 flex flex-col items-center text-center">
-                        <img
-                          src="/specialiste.png"
-                          alt="Spécialiste"
+                      <div className="flex-shrink-0 flex flex-col items-center text-center max-w-[90px]">
+                        <img src="/specialiste.png" alt="Spécialiste"
                           className="w-10 h-10 object-contain"
-                          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                        />
-                        <span className="text-[10px] text-gray-500 mt-0.5 max-w-[80px] leading-tight">
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                        <span className="text-[10px] text-gray-500 mt-0.5 leading-tight">
                           {avocat.certificatSpecialisation}
                         </span>
                       </div>
@@ -223,41 +234,73 @@ if (filtreMode) params.set('mode', filtreMode)
                   </svg>
                   Prochains créneaux disponibles
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-3">
                   {avocat.creneaux.map(c => {
                     const isSlotPicked = slotChoisi?.creneauId === c.id
                     const dateLabel = format(new Date(c.debut), 'EEE d · HH:mm', { locale: fr })
+                    const modesDispos = c.modes?.length > 0 ? c.modes : [c.mode]
                     return (
                       <button key={c.id}
-                        onClick={() => setSlotChoisi(isSlotPicked ? null : { creneauId: c.id, avocatId: avocat.id })}
+                        onClick={() => {
+                          if (isSlotPicked) {
+                            setSlotChoisi(null); setModeChoisi('')
+                          } else {
+                            selectionnerCreneau(c.id, avocat.id, avocat)
+                          }
+                        }}
                         className={`text-xs px-3 py-2 rounded-lg border transition-all ${
                           isSlotPicked
                             ? 'bg-teal-600 text-white border-teal-600'
                             : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700'
                         }`}>
                         {dateLabel}
-                        {c.mode !== formData.mode && (
-<span className="ml-1 opacity-60">· {MODES_LABELS[c.mode]}</span>
-                        )}
+                        <span className="ml-1 opacity-70">
+                          · {modesDispos.map(m => MODES_LABELS[m]).join(' / ')}
+                        </span>
                       </button>
                     )
                   })}
                 </div>
-              </div>
 
-              {/* Bouton confirmer */}
-              {isSelected && slotChoisi && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  {erreur && <p className="text-xs text-red-500 mb-3">{erreur}</p>}
-                  <button onClick={confirmer} disabled={envoi}
-                    className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
-                    {envoi
-                      ? 'Confirmation en cours...'
-                      : `Confirmer avec Me ${avocat.nom} — ${format(new Date(avocat.creneaux.find(c => c.id === slotChoisi.creneauId)!.debut), 'EEEE d MMMM à HH:mm', { locale: fr })}`
-                    }
-                  </button>
-                </div>
-              )}
+                {/* Sélection du mode + confirmation */}
+                {isSelected && slotChoisi && (() => {
+                  const creneau = avocat.creneaux.find(c => c.id === slotChoisi.creneauId)
+                  const modesDispos = creneau?.modes?.length > 0 ? creneau.modes : [creneau?.mode || 'PRESENTIEL']
+                  const dateStr = creneau ? format(new Date(creneau.debut), 'EEEE d MMMM à HH:mm', { locale: fr }) : ''
+                  return (
+                    <div className="pt-3 border-t border-gray-100">
+                      {modesDispos.length > 1 && (
+                        <div className="mb-3">
+                          <p className="text-xs text-gray-500 mb-2">Choisissez votre mode de consultation :</p>
+                          <div className="flex gap-2">
+                            {modesDispos.map(m => (
+                              <button key={m}
+                                onClick={() => setModeChoisi(m)}
+                                className={`flex-1 py-2 text-xs rounded-lg border transition-all ${
+                                  modeChoisi === m
+                                    ? 'bg-teal-50 border-teal-400 text-teal-800 font-medium'
+                                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                                }`}>
+                                {MODES_LABELS[m]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {erreur && <p className="text-xs text-red-500 mb-3">{erreur}</p>}
+                      <button
+                        onClick={() => confirmer(avocat)}
+                        disabled={envoi || !modeChoisi}
+                        className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+                        {envoi
+                          ? 'Confirmation en cours...'
+                          : `Confirmer avec Me ${avocat.nom} — ${dateStr}${modeChoisi ? ' · ' + MODES_LABELS[modeChoisi] : ''}`
+                        }
+                      </button>
+                    </div>
+                  )
+                })()}
+              </div>
             </div>
           )
         })}
