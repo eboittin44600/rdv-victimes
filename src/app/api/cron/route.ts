@@ -1,14 +1,10 @@
-// src/app/api/cron/route.ts
-// CRON Vercel — s'exécute chaque jour à 8h00
-// Configurer dans vercel.json : { "crons": [{ "path": "/api/cron", "schedule": "0 8 * * *" }] }
 export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { sendSmsRappel } from '@/lib/notifications'
-import { decrypt } from '@/lib/crypto'
-import { addDays, isAfter, isBefore, addHours } from 'date-fns'
+import { addDays, addHours } from 'date-fns'
 
-// Sécuriser le CRON avec un secret Vercel
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -19,7 +15,7 @@ export async function GET(req: NextRequest) {
   let supprimés = 0
   let rappelsEnvoyés = 0
 
-  // ── 1. SUPPRESSION RGPD automatique ───────────────────────────────────────
+  // 1. Suppression RGPD automatique
   const rdvsExpires = await prisma.rendezVous.findMany({
     where: {
       expireAt: { lte: now },
@@ -52,7 +48,7 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  // ── 2. RAPPELS SMS J-2 ────────────────────────────────────────────────────
+  // 2. Rappels SMS J-2
   const dans2jours = addDays(now, 2)
   const rdvsARappeler = await prisma.rendezVous.findMany({
     where: {
@@ -66,14 +62,12 @@ export async function GET(req: NextRequest) {
         },
       },
     },
-    include: {
-      creneau: true,
-      avocat: true,
-    },
+    include: { creneau: true, avocat: true },
   })
 
   for (const rdv of rdvsARappeler) {
     try {
+      const { decrypt } = await import('@/lib/crypto')
       const telephone = decrypt(rdv.victimeTelEncrypted)
       await sendSmsRappel({
         telephone,
@@ -91,7 +85,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // ── 3. ALERTE ADMIN si avocats sans créneau ───────────────────────────────
+  // 3. Alerte admin si avocats sans créneau
   const avocatsSansCreneaux = await prisma.avocat.findMany({
     where: {
       actif: true,
@@ -103,7 +97,6 @@ export async function GET(req: NextRequest) {
   })
 
   if (avocatsSansCreneaux.length >= 3) {
-    // Envoyer alerte email admin (implémentation identique à sendEmailMagiqueAvocat)
     console.warn(`ALERTE: ${avocatsSansCreneaux.length} avocats sans créneaux cette semaine`)
   }
 
