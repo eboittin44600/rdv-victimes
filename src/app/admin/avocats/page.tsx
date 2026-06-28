@@ -7,7 +7,7 @@ type Avocat = {
   telephone?: string; actif: boolean; visioOk: boolean
   numeroRue?: string; nomRue?: string; codePostal?: string; commune?: string
   anneeSerment?: number; certificatSpecialisation?: string
-  description?: string; photoUrl?: string; createdAt: string
+  description?: string; photoUrl?: string; siteInternet?: string; createdAt: string
 }
 
 const CERTIFICATS = [
@@ -78,7 +78,7 @@ export default function GestionAvocats() {
         description: avocat.description || '',
         actif: avocat.actif, visioOk: avocat.visioOk,
         photoUrl: avocat.photoUrl || '',
-	siteInternet: avocat.siteInternet || '',
+        siteInternet: avocat.siteInternet || '',
       })
       setPhotoPreview(avocat.photoUrl || null)
     } else {
@@ -339,6 +339,7 @@ export default function GestionAvocats() {
                 </div>
               )}
 
+              {/* Photo */}
               <div>
                 <label className="text-xs text-gray-500 block mb-2">Photo (médaillon)</label>
                 <div className="flex items-center gap-4">
@@ -370,6 +371,7 @@ export default function GestionAvocats() {
                 </div>
               </div>
 
+              {/* Identité */}
               <div>
                 <p className="text-xs font-medium text-gray-700 mb-2">Identité</p>
                 <div className="grid grid-cols-2 gap-3">
@@ -390,9 +392,10 @@ export default function GestionAvocats() {
                 </div>
               </div>
 
+              {/* Contact */}
               <div>
                 <p className="text-xs font-medium text-gray-700 mb-2">Contact</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className="text-xs text-gray-500 block mb-1">Email *</label>
                     <input type="email" value={form.email}
@@ -407,16 +410,17 @@ export default function GestionAvocats() {
                       placeholder="02 40 xx xx xx"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
                   </div>
-<div>
-  <label className="text-xs text-gray-500 block mb-1">Site internet</label>
-  <input type="url" value={form.siteInternet || ''}
-    onChange={e => setForm((f: any) => ({ ...f, siteInternet: e.target.value }))}
-    placeholder="https://www.cabinet-exemple.fr"
-    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
-</div>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Site internet</label>
+                  <input type="url" value={form.siteInternet || ''}
+                    onChange={e => setForm((f: any) => ({ ...f, siteInternet: e.target.value }))}
+                    placeholder="https://www.cabinet-exemple.fr"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
                 </div>
               </div>
 
+              {/* Adresse */}
               <div>
                 <p className="text-xs font-medium text-gray-700 mb-2">Adresse du cabinet</p>
                 <div className="grid grid-cols-4 gap-3 mb-3">
@@ -453,6 +457,7 @@ export default function GestionAvocats() {
                 </div>
               </div>
 
+              {/* Barreau */}
               <div>
                 <p className="text-xs font-medium text-gray-700 mb-2">Barreau</p>
                 <div className="grid grid-cols-2 gap-3">
@@ -476,6 +481,7 @@ export default function GestionAvocats() {
                 </div>
               </div>
 
+              {/* Description */}
               <div>
                 <label className="text-xs text-gray-500 block mb-1">Présentation libre</label>
                 <textarea value={form.description}
@@ -485,6 +491,7 @@ export default function GestionAvocats() {
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none" />
               </div>
 
+              {/* Préférences */}
               <div>
                 <p className="text-xs font-medium text-gray-700 mb-2">Préférences</p>
                 <div className="flex gap-6">
