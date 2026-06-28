@@ -186,22 +186,38 @@ export default function PortailVictime() {
             </div>
           )}
 
-          <div className="mb-1">
-            <label className="text-xs text-gray-500 block mb-1">Type de violence (facultatif)</label>
-            <select
-              value={form.typeViolence}
-              onChange={e => setForm(f => ({ ...f, typeViolence: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="">-- Je préfère ne pas préciser --</option>
-              <option value="CONJUGALES">Violences conjugales</option>
-              <option value="SEXUELLES">Violences sexuelles</option>
-              <option value="INTRAFAMILIALES">Violences intrafamiliales</option>
-              <option value="HARCELEMENT">Harcèlement</option>
-              <option value="AUTRE">Autre</option>
-            </select>
-            <p className="text-xs text-gray-400 mt-1">Cette information est utilisée uniquement pour les statistiques du barreau, anonymisées.</p>
-          </div>
+ <div className="mb-3">
+  <label className="text-xs text-gray-500 block mb-1">Objet de la consultation (facultatif)</label>
+  <select
+    value={form.typeViolence}
+    onChange={e => setForm(f => ({ ...f, typeViolence: e.target.value }))}
+    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+  >
+    <option value="">-- Je préfère ne pas préciser --</option>
+    <option value="CONJUGALES">Violences conjugales et familiales</option>
+    <option value="SEXUELLES">Violences sexuelles</option>
+    <option value="HARCELEMENT">Harcèlement</option>
+    <option value="AGRESSION">Agression</option>
+    <option value="ESCROQUERIE">Escroquerie</option>
+    <option value="VOL">Vol</option>
+    <option value="DEGRADATIONS">Dégradations</option>
+    <option value="ACCIDENT">Accident de la route</option>
+    <option value="AUTRE">Autre</option>
+  </select>
+</div>
+<div className="mb-1">
+  <label className="text-xs text-gray-500 block mb-1">Décrivez brièvement votre situation (facultatif)</label>
+  <textarea
+    value={form.resumeSituation || ''}
+    onChange={e => setForm(f => ({ ...f, resumeSituation: e.target.value.slice(0, 500) }))}
+    placeholder="En quelques mots, décrivez votre situation..."
+    rows={3}
+    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+  />
+  <p className="text-xs text-gray-400 mt-1">
+    {(form.resumeSituation || '').length}/500 caractères · Ces informations seront transmises à l'avocat
+  </p>
+</div>
         </div>
 
         {/* Consentement RGPD */}
