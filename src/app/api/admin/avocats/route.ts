@@ -1,21 +1,6 @@
-// src/app/api/admin/avocats/route.ts
-// GET  /api/admin/avocats — Liste de tous les avocats
-// POST /api/admin/avocats — Créer un avocat
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { verifyAdminToken } from '@/lib/auth'
-import { z } from 'zod'
-
-const schema = z.object({
-  prenom: z.string().min(1).max(100),
-  nom: z.string().min(1).max(100),
-  email: z.string().email(),
-  telephone: z.string().optional(),
-  actif: z.boolean().default(true),
-  visioOk: z.boolean().default(false),
-  specialites: z.array(z.string()).default([]),
-})
 
 export async function GET(req: NextRequest) {
   const isAdmin = await verifyAdminToken(req)
@@ -38,11 +23,13 @@ export async function POST(req: NextRequest) {
   if (!isAdmin) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   const body = await req.json()
-  const data = schema.parse(body)
 
-  // Vérifier que l'email n'existe pas déjà
+  if (!body.prenom || !body.nom || !body.email?.includes('@')) {
+    return NextResponse.json({ error: 'Données invalides.' }, { status: 400 })
+  }
+
   const existant = await prisma.avocat.findUnique({
-    where: { email: data.email.toLowerCase().trim() },
+    where: { email: body.email.toLowerCase().trim() },
   })
   if (existant) {
     return NextResponse.json({ error: 'Un avocat avec cet email existe déjà.' }, { status: 409 })
@@ -50,16 +37,13 @@ export async function POST(req: NextRequest) {
 
   const avocat = await prisma.avocat.create({
     data: {
-      ...data,
-      email: data.email.toLowerCase().trim(),
-    },
-  })
-
-  await prisma.auditLog.create({
-    data: {
-      action: 'AVOCAT_CREE',
-      acteur: 'ADMIN',
-      details: JSON.stringify({ avocatId: avocat.id, email: avocat.email }),
+      prenom: body.prenom,
+      nom: body.nom,
+      email: body.email.toLowerCase().trim(),
+      telephone: body.telephone || null,
+      actif: body.actif ?? true,
+      visioOk: body.visioOk ?? false,
+      specialites: body.specialites ?? [],
     },
   })
 
