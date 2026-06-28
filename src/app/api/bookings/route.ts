@@ -1,13 +1,8 @@
 export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma, trouverCreneauParcoursB } from '@/lib/db'
-import { encrypt } from '@/lib/crypto'
-import {
-  sendSmsConfirmation,
-  sendEmailAvocatNouveauRdv,
-  sendEmailVictimoVisio,
-} from '@/lib/notifications'
 import { addDays } from 'date-fns'
 
 const schema = z.object({
@@ -29,7 +24,7 @@ export async function POST(req: NextRequest) {
     const data = schema.parse(body)
 
     if (data.mode === 'VISIO' && !data.victimeEmail) {
-      return NextResponse.json({ error: 'L\'adresse email est requise pour une consultation en visioconférence.' }, { status: 400 })
+      return NextResponse.json({ error: "L'adresse email est requise pour une consultation en visioconférence." }, { status: 400 })
     }
 
     let creneauId: string
@@ -45,7 +40,7 @@ export async function POST(req: NextRequest) {
         where: { id: creneauId, statut: 'LIBRE', avocatId },
       })
       if (!creneau) {
-        return NextResponse.json({ error: 'Ce créneau n\'est plus disponible.' }, { status: 409 })
+        return NextResponse.json({ error: "Ce créneau n'est plus disponible." }, { status: 409 })
       }
     } else {
       const resultat = await trouverCreneauParcoursB(data.mode)
@@ -55,6 +50,9 @@ export async function POST(req: NextRequest) {
       creneauId = resultat.creneau.id
       avocatId = resultat.avocat.id
     }
+
+    const { encrypt, decrypt } = await import('@/lib/crypto')
+    const { sendSmsConfirmation, sendEmailAvocatNouveauRdv, sendEmailVictimoVisio } = await import('@/lib/notifications')
 
     const rdv = await prisma.$transaction(async (tx) => {
       const creneau = await tx.creneau.findFirst({
@@ -92,7 +90,8 @@ export async function POST(req: NextRequest) {
 
       await tx.auditLog.create({
         data: {
-          action: 'RDV_CREE', acteur: 'VICTIME',
+          action: 'RDV_CREE',
+          acteur: 'VICTIME',
           details: JSON.stringify({ rdvId: nouveauRdv.id, avocatId, parcours: data.parcours, mode: data.mode }),
         },
       })
@@ -100,29 +99,37 @@ export async function POST(req: NextRequest) {
       return nouveauRdv
     })
 
-    const { decrypt } = await import('@/lib/crypto')
     const telephone = decrypt(rdv.victimeTelEncrypted)
 
     await sendSmsConfirmation({
-      telephone, avocatNom: rdv.avocat.nom, debut: rdv.creneau.debut,
-      mode: rdv.mode, lienVisio: rdv.lienVisio ?? undefined,
+      telephone,
+      avocatNom: rdv.avocat.nom,
+      debut: rdv.creneau.debut,
+      mode: rdv.mode,
+      lienVisio: rdv.lienVisio ?? undefined,
       tokenSuppression: rdv.tokenSuppression,
     }).catch(console.error)
 
     await sendEmailAvocatNouveauRdv({
-      emailAvocat: rdv.avocat.email, nomAvocat: rdv.avocat.nom,
-      victimePrenom: rdv.victimePrenom, victimeNom: rdv.victimeNom,
-      victimeTelephone: telephone, debut: rdv.creneau.debut,
-      mode: rdv.mode, lienVisio: rdv.lienVisio ?? undefined,
+      emailAvocat: rdv.avocat.email,
+      nomAvocat: rdv.avocat.nom,
+      victimePrenom: rdv.victimePrenom,
+      victimeNom: rdv.victimeNom,
+      victimeTelephone: telephone,
+      debut: rdv.creneau.debut,
+      mode: rdv.mode,
+      lienVisio: rdv.lienVisio ?? undefined,
       tokenAnnulation: rdv.tokenAnnulation,
     }).catch(console.error)
 
     if (rdv.mode === 'VISIO' && rdv.victimeEmailEncrypted && rdv.lienVisio) {
-      const { decrypt: dec } = await import('@/lib/crypto')
-      const email = dec(rdv.victimeEmailEncrypted)
+      const email = decrypt(rdv.victimeEmailEncrypted)
       await sendEmailVictimoVisio({
-        email, avocatNom: rdv.avocat.nom, debut: rdv.creneau.debut,
-        lienVisio: rdv.lienVisio, tokenSuppression: rdv.tokenSuppression,
+        email,
+        avocatNom: rdv.avocat.nom,
+        debut: rdv.creneau.debut,
+        lienVisio: rdv.lienVisio,
+        tokenSuppression: rdv.tokenSuppression,
       }).catch(console.error)
     }
 
@@ -132,14 +139,17 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({
-      success: true, rdvId: rdv.id,
+      success: true,
+      rdvId: rdv.id,
       avocat: { prenom: rdv.avocat.prenom, nom: rdv.avocat.nom },
-      debut: rdv.creneau.debut, mode: rdv.mode, lienVisio: rdv.lienVisio,
+      debut: rdv.creneau.debut,
+      mode: rdv.mode,
+      lienVisio: rdv.lienVisio,
     })
 
   } catch (err: any) {
     if (err.message === 'CRENEAU_PRIS') {
-      return NextResponse.json({ error: 'Ce créneau vient d\'être réservé.' }, { status: 409 })
+      return NextResponse.json({ error: "Ce créneau vient d'être réservé." }, { status: 409 })
     }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Données invalides.', details: err.errors }, { status: 400 })
