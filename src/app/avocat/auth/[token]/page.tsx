@@ -1,6 +1,10 @@
 // src/app/avocat/auth/[token]/page.tsx
+// Validation du lien magique → crée la session → redirige vers l'espace avocat
+
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
+import { createSessionToken } from '@/lib/auth'
 
 export default async function ValiderToken({ params }: { params: { token: string } }) {
   const avocat = await prisma.avocat.findFirst({
@@ -27,12 +31,21 @@ export default async function ValiderToken({ params }: { params: { token: string
     )
   }
 
-  // Invalider le token
+  // Invalider le token après utilisation
   await prisma.avocat.update({
     where: { id: avocat.id },
     data: { authToken: null, authTokenExpiry: null },
   })
 
-  // Rediriger vers une API route qui crée le cookie
-  redirect(`/api/lawyers/auth/validate?token=${params.token}&id=${avocat.id}`)
+  // Créer le cookie de session JWT (8h)
+  const jwt = await createSessionToken(avocat.id, 'avocat')
+  cookies().set('avocat_session', jwt, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 8,
+    path: '/',
+  })
+
+  redirect('/avocat')
 }

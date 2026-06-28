@@ -68,36 +68,45 @@ export async function POST(req: NextRequest) {
   const debut = parseISO(data.debut)
   const fin = parseISO(data.fin)
 
-  if (data.recurrent && data.recurrentJusquAu) {
-    // Créer les créneaux récurrents hebdomadaires
+  // Générer des créneaux de 30 minutes sur la plage horaire
+  function genererCreneaux30min(dateDebut: Date, dateFin: Date, avocatId: string, mode: string, recurrent: boolean, recurrentJusquAu?: Date) {
     const creneaux = []
-    let current = debut
-    const fin_recurrence = parseISO(data.recurrentJusquAu)
-
-    while (current <= fin_recurrence) {
+    let current = dateDebut
+    while (current < dateFin) {
+      const finCreneau = new Date(current.getTime() + 30 * 60 * 1000)
+      if (finCreneau > dateFin) break
       creneaux.push({
-        avocatId: avocat.id,
-        debut: current,
-        fin: new Date(current.getTime() + (fin.getTime() - debut.getTime())),
-        mode: data.mode as any,
-        recurrent: true,
-        recurrentJusquAu: fin_recurrence,
+        avocatId,
+        debut: new Date(current),
+        fin: finCreneau,
+        mode: mode as any,
+        recurrent,
+        recurrentJusquAu: recurrentJusquAu || null,
       })
-      current = addWeeks(current, 1)
+      current = finCreneau
+    }
+    return creneaux
+  }
+
+  if (data.recurrent && data.recurrentJusquAu) {
+    const fin_recurrence = parseISO(data.recurrentJusquAu)
+    const creneaux = []
+    let currentDate = debut
+
+    while (currentDate <= fin_recurrence) {
+      const finDuJour = new Date(currentDate)
+      finDuJour.setHours(fin.getHours(), fin.getMinutes(), 0, 0)
+      const creneauxDuJour = genererCreneaux30min(currentDate, finDuJour, avocat.id, data.mode, true, fin_recurrence)
+      creneaux.push(...creneauxDuJour)
+      currentDate = addWeeks(currentDate, 1)
     }
 
     await prisma.creneau.createMany({ data: creneaux })
     return NextResponse.json({ created: creneaux.length })
   } else {
-    const creneau = await prisma.creneau.create({
-      data: {
-        avocatId: avocat.id,
-        debut,
-        fin,
-        mode: data.mode as any,
-      },
-    })
-    return NextResponse.json({ creneau })
+    const creneaux = genererCreneaux30min(debut, fin, avocat.id, data.mode, false)
+    await prisma.creneau.createMany({ data: creneaux })
+    return NextResponse.json({ created: creneaux.length })
   }
 }
 

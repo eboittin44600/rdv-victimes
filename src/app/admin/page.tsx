@@ -149,6 +149,10 @@ export default function AdminDashboard() {
               }`}
             >{l}</button>
           ))}
+          <a href="/admin/avocats"
+            className="text-xs px-4 py-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-white transition-all">
+            Gérer les avocats →
+          </a>
         </div>
 
         {/* Onglet Aperçu */}
