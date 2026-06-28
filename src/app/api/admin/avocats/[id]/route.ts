@@ -2,7 +2,7 @@
 // PATCH /api/admin/avocats/:id — Activer / désactiver
 // PUT   /api/admin/avocats/:id — Modifier un avocat
 // DELETE /api/admin/avocats/:id — Supprimer un avocat
-
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { verifyAdminToken } from '@/lib/auth'
