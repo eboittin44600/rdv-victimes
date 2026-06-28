@@ -77,9 +77,9 @@ export default function EspaceAvocat() {
   function ouvrirFiche() {
     if (!profil) return
     setFicheForm({
-      email: profil.email || '',
-siteInternet: profil.siteInternet || ''
+email: profil.email || '',
       telephone: profil.telephone || '',
+      siteInternet: profil.siteInternet || '',
       numeroRue: profil.numeroRue || '',
       nomRue: profil.nomRue || '',
       codePostal: profil.codePostal || '',
