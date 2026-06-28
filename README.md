@@ -139,4 +139,3 @@ Suggestion de nom : `rdv-victimes-saintnazaire.fr` ou `victimes.barreau-saintnaz
 
 Pour toute question technique sur ce code, conserver ce dossier de projet
 et le soumettre à un développeur ou à une agence web locale.
-44
