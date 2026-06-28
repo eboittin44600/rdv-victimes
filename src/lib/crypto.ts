@@ -21,4 +21,9 @@ export function decrypt(encryptedText: string): string {
   const KEY = getKey()
   const [ivHex, authTagHex, dataHex] = encryptedText.split(':')
   const iv = Buffer.from(ivHex, 'hex')
-  const authTag = Buffer.from(authTagHex,
+  const authTag = Buffer.from(authTagHex, 'hex')
+  const data = Buffer.from(dataHex, 'hex')
+  const decipher = createDecipheriv(ALGORITHM, KEY, iv)
+  decipher.setAuthTag(authTag)
+  return decipher.update(data) + decipher.final('utf8')
+}
