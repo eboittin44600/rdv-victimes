@@ -85,7 +85,7 @@ export default function PortailVictime() {
             Prendre un premier rendez-vous
           </h1>
           <p className="text-gray-500 text-sm">
-            Consultation initiale gratuite et confidentielle pour les victimes de violences
+            Consultation initiale gratuite et confidentielle pour les victimes d'infractions
           </p>
         </div>
 
