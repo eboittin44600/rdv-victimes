@@ -32,9 +32,8 @@ export default function ChoisirAvocat() {
     : {}
 
   useEffect(() => {
-    const params = new URLSearchParams()
-    if (filtreMode) params.set('mode', filtreMode)
-    else if (formData.mode) params.set('mode', formData.mode)
+const params = new URLSearchParams()
+if (filtreMode) params.set('mode', filtreMode)
 
     setLoading(true)
     fetch(`/api/slots?${params}`)
@@ -229,7 +228,7 @@ export default function ChoisirAvocat() {
                         }`}>
                         {dateLabel}
                         {c.mode !== formData.mode && (
-                          <span className="ml-1 opacity-60">· {MODES_LABELS[c.mode]}</span>
+<span className="ml-1 opacity-60">· {MODES_LABELS[c.mode]}</span>
                         )}
                       </button>
                     )
