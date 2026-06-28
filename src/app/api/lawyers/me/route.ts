@@ -9,8 +9,8 @@ export async function GET(req: NextRequest) {
   if (!avocat) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   const detail = await prisma.$queryRaw<any[]>`
-    SELECT id, prenom, nom, email, telephone, actif, "visioOk",
-           numero_rue, nom_rue, code_postal, commune, description, photo_url
+SELECT id, prenom, nom, email, telephone, actif, "visioOk",
+       numero_rue, nom_rue, code_postal, commune, description, photo_url, site_internet
     FROM avocats WHERE id = ${avocat.id}::uuid
   `
   const d = detail[0] || {}
@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     prenom: d.prenom,
     nom: d.nom,
     email: d.email,
+siteInternet: d.site_internet,
     telephone: d.telephone,
     actif: d.actif,
     visioOk: d.visioOk,
@@ -60,14 +61,15 @@ export async function PATCH(req: NextRequest) {
       })
     }
     await prisma.$executeRaw`
-      UPDATE avocats SET
-        numero_rue = ${body.numeroRue || null},
-        nom_rue = ${body.nomRue || null},
-        code_postal = ${body.codePostal || null},
-        commune = ${body.commune || null},
-        description = ${body.description || null},
-        photo_url = ${body.photoUrl || null}
-      WHERE id = ${avocat.id}::uuid
+UPDATE avocats SET
+  numero_rue = ${body.numeroRue || null},
+  nom_rue = ${body.nomRue || null},
+  code_postal = ${body.codePostal || null},
+  commune = ${body.commune || null},
+  description = ${body.description || null},
+  photo_url = ${body.photoUrl || null},
+  site_internet = ${body.siteInternet || null}
+WHERE id = ${avocat.id}::uuid
     `
   }
 

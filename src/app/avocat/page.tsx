@@ -78,6 +78,7 @@ export default function EspaceAvocat() {
     if (!profil) return
     setFicheForm({
       email: profil.email || '',
+siteInternet: profil.siteInternet || ''
       telephone: profil.telephone || '',
       numeroRue: profil.numeroRue || '',
       nomRue: profil.nomRue || '',
@@ -580,7 +581,13 @@ export default function EspaceAvocat() {
                   </div>
                 </div>
               </div>
-
+<div>
+  <label className="text-xs text-gray-500 block mb-1">Site internet</label>
+  <input type="url" value={ficheForm.siteInternet || ''}
+    onChange={e => setFicheForm((f: any) => ({ ...f, siteInternet: e.target.value }))}
+    placeholder="https://www.cabinet-exemple.fr"
+    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+</div>
               {/* Adresse */}
               <div>
                 <p className="text-xs font-medium text-gray-700 mb-2">Adresse du cabinet</p>
