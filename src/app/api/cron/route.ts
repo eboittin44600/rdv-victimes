@@ -1,7 +1,7 @@
 // src/app/api/cron/route.ts
 // CRON Vercel — s'exécute chaque jour à 8h00
 // Configurer dans vercel.json : { "crons": [{ "path": "/api/cron", "schedule": "0 8 * * *" }] }
-
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { sendSmsRappel } from '@/lib/notifications'
