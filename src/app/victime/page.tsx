@@ -1,5 +1,4 @@
 'use client'
-// src/app/victime/page.tsx — Portail victime : étape 1 (choix parcours + formulaire)
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -13,7 +12,7 @@ export default function PortailVictime() {
   const [mode, setMode] = useState<Mode>('PRESENTIEL')
   const [form, setForm] = useState({
     prenom: '', nom: '', telephone: '', email: '',
-    typeViolence: '', consentement: false,
+    typeViolence: '', resumeSituation: '', consentement: false,
   })
   const [erreurs, setErreurs] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
@@ -35,13 +34,11 @@ export default function PortailVictime() {
     if (!valider()) return
     setLoading(true)
 
-    // Stocker les données du formulaire en session (côté client uniquement)
     sessionStorage.setItem('rdv_form', JSON.stringify({ ...form, mode, parcours }))
 
     if (parcours === 'A') {
       router.push('/victime/choisir-avocat')
     } else {
-      // Parcours B : envoi direct
       try {
         const res = await fetch('/api/bookings', {
           method: 'POST',
@@ -54,6 +51,7 @@ export default function PortailVictime() {
             victimeEmail: mode === 'VISIO' ? form.email : undefined,
             mode,
             typeViolence: form.typeViolence || 'NON_PRECISE',
+            resumeSituation: form.resumeSituation || undefined,
             consentementRgpd: true,
           }),
         })
@@ -76,7 +74,6 @@ export default function PortailVictime() {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-xl mx-auto">
 
-        {/* En-tête */}
         <div className="text-center mb-8">
           <span className="inline-flex items-center gap-2 bg-teal-50 text-teal-800 text-sm px-3 py-1 rounded-full mb-4">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,7 +89,6 @@ export default function PortailVictime() {
           </p>
         </div>
 
-        {/* Choix du parcours */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           {([
             { id: 'A', titre: 'Je choisis mon avocat', desc: 'Consultez les créneaux et sélectionnez l\'avocat de votre choix', icon: '👤' },
@@ -119,7 +115,6 @@ export default function PortailVictime() {
           ))}
         </div>
 
-        {/* Formulaire */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
           <h2 className="text-sm font-medium text-gray-900 mb-4">Vos coordonnées</h2>
 
@@ -186,41 +181,41 @@ export default function PortailVictime() {
             </div>
           )}
 
- <div className="mb-3">
-  <label className="text-xs text-gray-500 block mb-1">Objet de la consultation (facultatif)</label>
-  <select
-    value={form.typeViolence}
-    onChange={e => setForm(f => ({ ...f, typeViolence: e.target.value }))}
-    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-  >
-    <option value="">-- Je préfère ne pas préciser --</option>
-    <option value="CONJUGALES">Violences conjugales et familiales</option>
-    <option value="SEXUELLES">Violences sexuelles</option>
-    <option value="HARCELEMENT">Harcèlement</option>
-    <option value="AGRESSION">Agression</option>
-    <option value="ESCROQUERIE">Escroquerie</option>
-    <option value="VOL">Vol</option>
-    <option value="DEGRADATIONS">Dégradations</option>
-    <option value="ACCIDENT">Accident de la route</option>
-    <option value="AUTRE">Autre</option>
-  </select>
-</div>
-<div className="mb-1">
-  <label className="text-xs text-gray-500 block mb-1">Décrivez brièvement votre situation (facultatif)</label>
-  <textarea
-    value={form.resumeSituation || ''}
-    onChange={e => setForm(f => ({ ...f, resumeSituation: e.target.value.slice(0, 500) }))}
-    placeholder="En quelques mots, décrivez votre situation..."
-    rows={3}
-    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
-  />
-  <p className="text-xs text-gray-400 mt-1">
-    {(form.resumeSituation || '').length}/500 caractères · Ces informations seront transmises à l'avocat
-  </p>
-</div>
+          <div className="mb-3">
+            <label className="text-xs text-gray-500 block mb-1">Objet de la consultation (facultatif)</label>
+            <select
+              value={form.typeViolence}
+              onChange={e => setForm(f => ({ ...f, typeViolence: e.target.value }))}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+            >
+              <option value="">-- Je préfère ne pas préciser --</option>
+              <option value="CONJUGALES">Violences conjugales et familiales</option>
+              <option value="SEXUELLES">Violences sexuelles</option>
+              <option value="HARCELEMENT">Harcèlement</option>
+              <option value="AGRESSION">Agression</option>
+              <option value="ESCROQUERIE">Escroquerie</option>
+              <option value="VOL">Vol</option>
+              <option value="DEGRADATIONS">Dégradations</option>
+              <option value="ACCIDENT">Accident de la route</option>
+              <option value="AUTRE">Autre</option>
+            </select>
+          </div>
+
+          <div className="mb-1">
+            <label className="text-xs text-gray-500 block mb-1">Décrivez brièvement votre situation (facultatif)</label>
+            <textarea
+              value={form.resumeSituation}
+              onChange={e => setForm(f => ({ ...f, resumeSituation: e.target.value.slice(0, 500) }))}
+              placeholder="En quelques mots, décrivez votre situation..."
+              rows={3}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              {form.resumeSituation.length}/500 caractères · Ces informations seront transmises à l'avocat
+            </p>
+          </div>
         </div>
 
-        {/* Consentement RGPD */}
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
           <label className="flex items-start gap-3 cursor-pointer">
             <input
@@ -248,10 +243,9 @@ export default function PortailVictime() {
           disabled={loading}
           className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white font-medium py-3 rounded-xl transition-colors"
         >
-          {loading ? 'Recherche en cours…' : parcours === 'A' ? 'Choisir mon avocat →' : 'Trouver le premier créneau →'}
+          {loading ? 'Recherche en cours...' : parcours === 'A' ? 'Choisir mon avocat →' : 'Trouver le premier créneau →'}
         </button>
 
-        {/* Numéros d'urgence */}
         <div className="mt-6 text-center text-xs text-gray-400">
           En danger immédiat ?{' '}
           <a href="tel:17" className="text-red-500 font-medium">17 (Police)</a>
