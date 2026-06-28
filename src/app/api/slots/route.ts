@@ -1,15 +1,13 @@
-// src/app/api/slots/route.ts
-// GET /api/slots — Récupérer les créneaux disponibles (parcours A)
 export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { addDays, startOfDay } from 'date-fns'
+import { addDays } from 'date-fns'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const mode = searchParams.get('mode')        // PRESENTIEL | VISIO | TELEPHONE
-  const specialite = searchParams.get('specialite')
-  const avocatId = searchParams.get('avocatId') // Pour filtrer un avocat précis
+  const mode = searchParams.get('mode')
+  const avocatId = searchParams.get('avocatId')
 
   const maintenant = new Date()
   const dans30jours = addDays(maintenant, 30)
@@ -18,7 +16,6 @@ export async function GET(req: NextRequest) {
     where: {
       actif: true,
       ...(mode === 'VISIO' ? { visioOk: true } : {}),
-      ...(specialite ? { specialites: { has: specialite } } : {}),
       ...(avocatId ? { id: avocatId } : {}),
       creneaux: {
         some: {
@@ -28,11 +25,8 @@ export async function GET(req: NextRequest) {
       },
     },
     select: {
-      id: true,
-      prenom: true,
-      nom: true,
-      specialites: true,
-      visioOk: true,
+      id: true, prenom: true, nom: true,
+      visioOk: true, specialites: true,
       creneaux: {
         where: {
           statut: 'LIBRE',
@@ -40,20 +34,31 @@ export async function GET(req: NextRequest) {
           ...(mode ? { mode: mode as any } : {}),
         },
         orderBy: { debut: 'asc' },
-        take: 8, // Limiter à 8 créneaux par avocat pour l'affichage
-        select: {
-          id: true,
-          debut: true,
-          fin: true,
-          mode: true,
-        },
+        take: 8,
+        select: { id: true, debut: true, fin: true, mode: true },
       },
     },
     orderBy: { nom: 'asc' },
   })
 
-  // Filtrer les avocats qui n'ont aucun créneau dans le mode demandé
   const avocatsFiltres = avocats.filter(a => a.creneaux.length > 0)
 
-  return NextResponse.json({ avocats: avocatsFiltres })
+  // Récupérer les champs additionnels
+  const avocatsAvecDetails = await Promise.all(avocatsFiltres.map(async (a) => {
+    const detail = await prisma.$queryRaw<any[]>`
+      SELECT commune, annee_serment, certificat_specialisation, description, photo_url
+      FROM avocats WHERE id = ${a.id}::uuid
+    `
+    const d = detail[0] || {}
+    return {
+      ...a,
+      commune: d.commune,
+      anneeSerment: d.annee_serment,
+      certificatSpecialisation: d.certificat_specialisation,
+      description: d.description,
+      photoUrl: d.photo_url,
+    }
+  }))
+
+  return NextResponse.json({ avocats: avocatsAvecDetails })
 }
