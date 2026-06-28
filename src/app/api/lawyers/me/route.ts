@@ -1,6 +1,6 @@
 // src/app/api/lawyers/me/route.ts
 // GET /api/lawyers/me — Profil de l'avocat connecté
-
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAvocatToken } from '@/lib/auth'
 
