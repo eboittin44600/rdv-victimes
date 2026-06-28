@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { decrypt as decryptData } from '@/lib/crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
