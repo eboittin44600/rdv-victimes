@@ -1,6 +1,6 @@
 // src/app/api/slots/route.ts
 // GET /api/slots — Récupérer les créneaux disponibles (parcours A)
-
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { addDays, startOfDay } from 'date-fns'
