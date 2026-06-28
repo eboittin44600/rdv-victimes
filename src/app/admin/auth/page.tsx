@@ -10,7 +10,7 @@ export default function AdminAuth() {
   async function connexion() {
     setLoading(true)
     setErreur('')
-    const res = await fetch('/api/admin/auth', {
+const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
