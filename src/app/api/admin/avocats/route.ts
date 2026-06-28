@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { verifyAdminToken } from '@/lib/auth'
@@ -16,7 +17,28 @@ export async function GET(req: NextRequest) {
     orderBy: { nom: 'asc' },
   })
 
-  return NextResponse.json({ avocats })
+  // Récupérer les champs additionnels via requête SQL directe
+  const avocatsAvecDetails = await Promise.all(avocats.map(async (a) => {
+    const detail = await prisma.$queryRaw<any[]>`
+      SELECT numero_rue, nom_rue, code_postal, commune,
+             annee_serment, certificat_specialisation, description, photo_url
+      FROM avocats WHERE id = ${a.id}::uuid
+    `
+    const d = detail[0] || {}
+    return {
+      ...a,
+      numeroRue: d.numero_rue,
+      nomRue: d.nom_rue,
+      codePostal: d.code_postal,
+      commune: d.commune,
+      anneeSerment: d.annee_serment,
+      certificatSpecialisation: d.certificat_specialisation,
+      description: d.description,
+      photoUrl: d.photo_url,
+    }
+  }))
+
+  return NextResponse.json({ avocats: avocatsAvecDetails })
 }
 
 export async function POST(req: NextRequest) {
@@ -44,9 +66,23 @@ export async function POST(req: NextRequest) {
       telephone: body.telephone || null,
       actif: body.actif ?? true,
       visioOk: body.visioOk ?? false,
-      specialites: body.specialites ?? [],
+      specialites: [],
     },
   })
+
+  // Mettre à jour les champs additionnels
+  await prisma.$executeRaw`
+    UPDATE avocats SET
+      numero_rue = ${body.numeroRue || null},
+      nom_rue = ${body.nomRue || null},
+      code_postal = ${body.codePostal || null},
+      commune = ${body.commune || null},
+      annee_serment = ${body.anneeSerment || null},
+      certificat_specialisation = ${body.certificatSpecialisation || null},
+      description = ${body.description || null},
+      photo_url = ${body.photoUrl || null}
+    WHERE id = ${avocat.id}::uuid
+  `
 
   return NextResponse.json({ avocat })
 }
