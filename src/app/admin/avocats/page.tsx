@@ -38,7 +38,7 @@ const CHAMPS_VIDES = {
   prenom: '', nom: '', email: '', telephone: '',
   numeroRue: '', nomRue: '', codePostal: '', commune: '',
   anneeSerment: '', certificatSpecialisation: '', description: '',
-  actif: true, visioOk: false, photoUrl: '',
+  actif: true, visioOk: false, photoUrl: '', siteInternet: '',
 }
 
 export default function GestionAvocats() {
@@ -78,6 +78,7 @@ export default function GestionAvocats() {
         description: avocat.description || '',
         actif: avocat.actif, visioOk: avocat.visioOk,
         photoUrl: avocat.photoUrl || '',
+	siteInternet: avocat.siteInternet || '',
       })
       setPhotoPreview(avocat.photoUrl || null)
     } else {
@@ -406,6 +407,13 @@ export default function GestionAvocats() {
                       placeholder="02 40 xx xx xx"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
                   </div>
+<div>
+  <label className="text-xs text-gray-500 block mb-1">Site internet</label>
+  <input type="url" value={form.siteInternet || ''}
+    onChange={e => setForm((f: any) => ({ ...f, siteInternet: e.target.value }))}
+    placeholder="https://www.cabinet-exemple.fr"
+    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+</div>
                 </div>
               </div>
 
