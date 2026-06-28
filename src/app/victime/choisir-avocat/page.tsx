@@ -45,7 +45,7 @@ export default function ChoisirAvocat() {
 
   function selectionnerCreneau(creneauId: string, avocatId: string, avocat: Avocat) {
     const creneau = avocat.creneaux.find(c => c.id === creneauId)
-    const modesDispos = creneau?.modes?.length > 0 ? creneau.modes : [creneau?.mode || 'PRESENTIEL']
+const modesDispos = (creneau?.modes && creneau.modes.length > 0) ? creneau.modes : [creneau?.mode || 'PRESENTIEL']
     setSlotChoisi({ creneauId, avocatId })
     // Pré-sélectionner le mode du formulaire si disponible, sinon le premier
     const modePrefere = modesDispos.includes(formData.mode) ? formData.mode : modesDispos[0]
