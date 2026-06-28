@@ -9,8 +9,9 @@ type Creneau = { id: string; debut: string; fin: string; mode: string }
 type Avocat = {
   id: string; prenom: string; nom: string
   visioOk: boolean; specialites: string[]
-  commune?: string; anneeSerment?: number
-  certificatSpecialisation?: string; description?: string; photoUrl?: string
+  numeroRue?: string; nomRue?: string; codePostal?: string; commune?: string
+  anneeSerment?: number; certificatSpecialisation?: string
+  description?: string; photoUrl?: string; siteInternet?: string
   creneaux: Creneau[]
 }
 
@@ -163,9 +164,17 @@ if (filtreMode) params.set('mode', filtreMode)
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className="font-medium text-gray-900">Me {avocat.prenom} {avocat.nom}</h3>
-                      {avocat.commune && (
-                        <p className="text-sm text-gray-500 mt-0.5">Cabinet situé à {avocat.commune}</p>
-                      )}
+{(avocat.numeroRue || avocat.nomRue || avocat.commune) && (
+  <p className="text-sm text-gray-500 mt-0.5">
+    {[avocat.numeroRue, avocat.nomRue, avocat.codePostal, avocat.commune].filter(Boolean).join(' ')}
+  </p>
+)}
+{avocat.siteInternet && (
+  <a href={avocat.siteInternet} target="_blank" rel="noopener noreferrer"
+    className="text-xs text-teal-600 hover:underline mt-0.5 block">
+    {avocat.siteInternet.replace(/^https?:\/\//, '')}
+  </a>
+)}
                       {avocat.anneeSerment && (
                         <p className="text-xs text-gray-400 mt-0.5">
                           Prestation de serment : {avocat.anneeSerment}

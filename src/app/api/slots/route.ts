@@ -43,20 +43,25 @@ export async function GET(req: NextRequest) {
 
   const avocatsFiltres = avocats.filter(a => a.creneaux.length > 0)
 
-  // Récupérer les champs additionnels
   const avocatsAvecDetails = await Promise.all(avocatsFiltres.map(async (a) => {
     const detail = await prisma.$queryRaw<any[]>`
-      SELECT commune, annee_serment, certificat_specialisation, description, photo_url
+      SELECT numero_rue, nom_rue, code_postal, commune,
+             annee_serment, certificat_specialisation,
+             description, photo_url, site_internet
       FROM avocats WHERE id = ${a.id}::uuid
     `
     const d = detail[0] || {}
     return {
       ...a,
+      numeroRue: d.numero_rue,
+      nomRue: d.nom_rue,
+      codePostal: d.code_postal,
       commune: d.commune,
       anneeSerment: d.annee_serment,
       certificatSpecialisation: d.certificat_specialisation,
       description: d.description,
       photoUrl: d.photo_url,
+      siteInternet: d.site_internet,
     }
   }))
 
