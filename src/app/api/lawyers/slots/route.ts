@@ -1,7 +1,7 @@
 // src/app/api/lawyers/slots/route.ts
 // GET  /api/lawyers/slots  — Créneaux de l'avocat connecté
 // POST /api/lawyers/slots  — Ajouter un créneau
-
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
