@@ -37,10 +37,13 @@ const formData = typeof window !== 'undefined'
     if (formData.mode) setFiltreMode(formData.mode)
   }, [])
 
+useEffect(() => {
+    if (formData.mode) setFiltreMode(formData.mode)
+  }, [])
+
   useEffect(() => {
     const params = new URLSearchParams()
     if (filtreMode) params.set('mode', filtreMode)
-    else if (formData.mode) params.set('mode', formData.mode)
     setLoading(true)
     fetch(`/api/slots?${params}`)
       .then(r => r.json())
